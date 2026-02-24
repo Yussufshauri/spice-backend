@@ -3,12 +3,15 @@ package System.spice_booking.model.entity;
 
 import System.spice_booking.model.enums.Status;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-@Table(name = "Tours")
+@Table(name = "tours")
+@JsonIgnoreProperties({"user","reviews"})
 public class Tour {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,14 +23,18 @@ public class Tour {
     private Status status = Status.Pending;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({"password","tours","booking","reviews"})
     private User user;
+    private String title;
+    private LocalDate date;
+    private String imageUrl;
     @OneToMany(mappedBy = "tour", cascade = CascadeType.ALL)
     private List<Review> reviews;
 
     public Tour() {
     }
 
-    public Tour(Long tour_id, String name, String description, String price, String location, Status status, User user, List<Review> reviews) {
+    public Tour(Long tour_id, String name, String description, String price, String location, Status status, User user, String title, LocalDate date, String imageUrl, List<Review> reviews) {
         this.tour_id = tour_id;
         this.name = name;
         this.description = description;
@@ -35,6 +42,9 @@ public class Tour {
         this.location = location;
         this.status = status;
         this.user = user;
+        this.title = title;
+        this.date = date;
+        this.imageUrl = imageUrl;
         this.reviews = reviews;
     }
 
@@ -92,6 +102,30 @@ public class Tour {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public List<Review> getReviews() {

@@ -4,6 +4,7 @@ public enum Status {
     Pending,
     Confirmed,
     Completed,
-    Canceled
-
+    Rejected,
+    Canceled,
+   Approved
 }

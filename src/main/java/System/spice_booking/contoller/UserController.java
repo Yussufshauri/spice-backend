@@ -8,111 +8,141 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/user")
 @CrossOrigin(origins = "*")
 public class UserController {
+
     @Autowired
     private UserRepository repository;
 
-    //GET
-    @GetMapping
-    public List<User> getAllUsers(){
-        return repository.findAll();
+    // Helper: remove password from responses
+    private User sanitize(User u) {
+        if (u != null) u.setPassword(null);
+        return u;
     }
 
-    //POST/CREATE
+    private List<User> sanitizeList(List<User> users) {
+        users.forEach(this::sanitize);
+        return users;
+    }
+
+    // GET ALL USERS
+    @GetMapping
+    public List<User> getAllUsers() {
+        return sanitizeList(repository.findAll());
+    }
+
+    // REGISTER (Default Tourist, Admin only if email matches and not exists)
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user){
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+
+        if (user.getUsername() == null || user.getUsername().isBlank()
+                || user.getPassword() == null || user.getPassword().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required"));
+        }
 
         Optional<User> existUser = repository.findByUsername(user.getUsername());
-        if (existUser.isPresent()){
-            return ResponseEntity.status(409).body("Username already exists");
+        if (existUser.isPresent()) {
+            return ResponseEntity.status(409).body(Map.of("error", "Username already exists"));
         }
 
         // ADMIN mmoja tu kwa email maalum
-        if ("yussuf@gmail.com".equalsIgnoreCase(user.getEmail())) {
-
+        if (user.getEmail() != null && "yussuf@gmail.com".equalsIgnoreCase(user.getEmail())) {
             Optional<User> adminExist = repository.findByRole(Role.Admin);
             if (adminExist.isPresent()) {
-                return ResponseEntity.status(403).body("Admin already exists");
+                return ResponseEntity.status(403).body(Map.of("error", "Admin already exists"));
             }
-
             user.setRole(Role.Admin);
-
         } else {
-            // DEFAULT ROLE
             user.setRole(Role.Tourist);
         }
 
-        return ResponseEntity.ok(repository.save(user));
+        User saved = repository.save(user);
+        return ResponseEntity.ok(sanitize(saved));
     }
 
-    //LOGIN
+    // LOGIN
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        Optional<User> userCredentials = repository.findByUsernameAndPassword(request.getUsername(),request.getPassword());
-        if (userCredentials.isPresent()) {
-            return ResponseEntity.ok(userCredentials.get());
+
+        if (request.getUsername() == null || request.getUsername().isBlank()
+                || request.getPassword() == null || request.getPassword().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required"));
         }
+
+        Optional<User> userCredentials =
+                repository.findByUsernameAndPassword(request.getUsername(), request.getPassword());
+
+        if (userCredentials.isPresent()) {
+            return ResponseEntity.ok(sanitize(userCredentials.get()));
+        }
+
         return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
     }
+
     // UPDATE USER
     @PutMapping("/{user_id}")
-    public ResponseEntity<?> updateUser(
-            @PathVariable Long user_id,
-            @RequestBody User updatedUser
-    ) {
-        Optional<User> existingUserOpt = repository.findById(user_id);
+    public ResponseEntity<?> updateUser(@PathVariable Long user_id, @RequestBody User updatedUser) {
 
+        Optional<User> existingUserOpt = repository.findById(user_id);
         if (existingUserOpt.isEmpty()) {
-            return ResponseEntity.status(404).body("User not found");
+            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
         }
 
         User existingUser = existingUserOpt.get();
 
-        // Optional: check username uniqueness
-        Optional<User> userWithSameUsername = repository.findByUsername(updatedUser.getUsername());
-        if (userWithSameUsername.isPresent() &&
-                !userWithSameUsername.get().getUser_id().equals(user_id)) {
-            return ResponseEntity.status(409).body("Username already exists");
+        // Check username uniqueness (if username provided)
+        if (updatedUser.getUsername() != null && !updatedUser.getUsername().isBlank()) {
+            Optional<User> userWithSameUsername = repository.findByUsername(updatedUser.getUsername());
+            if (userWithSameUsername.isPresent()
+                    && !userWithSameUsername.get().getUser_id().equals(user_id)) {
+                return ResponseEntity.status(409).body(Map.of("error", "Username already exists"));
+            }
+            existingUser.setUsername(updatedUser.getUsername());
         }
 
-        // Update fields
-        existingUser.setName(updatedUser.getName());
-        existingUser.setUsername(updatedUser.getUsername());
-        existingUser.setEmail(updatedUser.getEmail());
-        existingUser.setPassword(updatedUser.getPassword());
-        existingUser.setRole(updatedUser.getRole());
+        if (updatedUser.getName() != null) existingUser.setName(updatedUser.getName());
+        if (updatedUser.getEmail() != null) existingUser.setEmail(updatedUser.getEmail());
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isBlank()) {
+            existingUser.setPassword(updatedUser.getPassword());
+        }
+
+        // Role update (optional). Kama hutaki role ibadilishwe ovyo, unaweza kuiondoa.
+        if (updatedUser.getRole() != null) existingUser.setRole(updatedUser.getRole());
 
         User savedUser = repository.save(existingUser);
-        return ResponseEntity.ok(savedUser);
+        return ResponseEntity.ok(sanitize(savedUser));
     }
 
-    //register Guider
+    // REGISTER GUIDE
     @PostMapping("/register-guide")
-    public ResponseEntity<?> registerGuide(@RequestBody User user){
+    public ResponseEntity<?> registerGuide(@RequestBody User user) {
+
+        if (user.getUsername() == null || user.getUsername().isBlank()
+                || user.getPassword() == null || user.getPassword().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required"));
+        }
 
         Optional<User> existUser = repository.findByUsername(user.getUsername());
-        if (existUser.isPresent()){
-            return ResponseEntity.status(409).body("Username already exists");
+        if (existUser.isPresent()) {
+            return ResponseEntity.status(409).body(Map.of("error", "Username already exists"));
         }
 
         user.setRole(Role.Guide);
-        return ResponseEntity.ok(repository.save(user));
+        User saved = repository.save(user);
+        return ResponseEntity.ok(sanitize(saved));
     }
 
-    //DELETE
+    // DELETE USER
     @DeleteMapping("/{user_id}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long user_id){
+    public ResponseEntity<?> deleteUser(@PathVariable Long user_id) {
         if (!repository.existsById(user_id)) {
-            return ResponseEntity.status(404).body("User not found");
+            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
         }
         repository.deleteById(user_id);
-        return ResponseEntity.ok("User deleted successfully");
+        return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }
 }

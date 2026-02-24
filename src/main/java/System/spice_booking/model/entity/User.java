@@ -1,12 +1,14 @@
 package System.spice_booking.model.entity;
 
 import System.spice_booking.model.enums.Role;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.util.List;
 
 @Entity
-@Table(name = "Users")
+@Table(name = "users")
+@JsonIgnoreProperties({"tours","booking","reviews"})
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

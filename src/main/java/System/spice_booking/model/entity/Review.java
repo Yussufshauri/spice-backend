@@ -1,5 +1,6 @@
 package System.spice_booking.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 @Entity
@@ -9,13 +10,17 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long review_id;
     private int rating;
+    @Column(length = 2000)
     private String comment;
     private  String reviewDate;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({"password","tours","booking","reviews"})
     private User user;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "tour_id", nullable = false)
+    @JsonIgnoreProperties({"user","reviews"})
     private Tour tour;
 
     public Review() {}
