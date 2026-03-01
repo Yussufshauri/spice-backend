@@ -18,7 +18,10 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/tour")
-@CrossOrigin(origins = "*")
+@CrossOrigin(
+        origins = "https://spice-booking.netlify.app",
+        allowCredentials = "true"
+)
 public class TourController {
 
     @Autowired

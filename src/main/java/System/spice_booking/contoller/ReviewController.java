@@ -17,7 +17,10 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/review")
-@CrossOrigin(origins = "*")
+@CrossOrigin(
+        origins = "https://spice-booking.netlify.app",
+        allowCredentials = "true"
+)
 public class ReviewController {
 
     @Autowired
